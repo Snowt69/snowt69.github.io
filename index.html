@@ -30,10 +30,15 @@
                 <p>Ленивый кодер тг ботов и скриптов на боблох, имею тг канал с почти 10к</p>
             </div>
 
-            <!-- Блок "Навыки" с 3D иконками -->
+            <!-- Блок "Навыки" -->
             <div class="section">
                 <h2><i class="fas fa-code"></i> Языки</h2>
-                <div id="skills-3d" class="skills-3d"></div>
+                <div class="skills">
+                    <span class="skill">Python</span>
+                    <span class="skill">HTML</span>
+                    <span class="skill">JavaScript</span>
+                    <span class="skill">Lua</span>
+                </div>
             </div>
 
             <!-- Блок "Проекты" -->
@@ -97,11 +102,62 @@
         particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
 
         const particlesMaterial = new THREE.PointsMaterial({
-            size: 0.005,
+            size: 0.01,
             color: 0xffffff,
             blending: THREE.AdditiveBlending,
             transparent: true,
             depthWrite: false
+        });
+
+        const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+        scene.add(particlesMesh);
+
+        // Группа для 3D иконок
+        const iconsGroup = new THREE.Group();
+        scene.add(iconsGroup);
+
+        // 3D иконки языков
+        const loader = new THREE.TextureLoader();
+        const icons = [
+            { texture: 'https://www.python.org/static/community_logos/python-logo-master-v3-TM.png', position: new THREE.Vector3(-3, 1, -1) },
+            { texture: 'https://upload.wikimedia.org/wikipedia/commons/6/61/HTML5_logo_and_wordmark.svg', position: new THREE.Vector3(3, 1, -1) },
+            { texture: 'https://upload.wikimedia.org/wikipedia/commons/6/6a/JavaScript-logo.png', position: new THREE.Vector3(-3, -1, -1) },
+            { texture: 'https://upload.wikimedia.org/wikipedia/commons/d/df/Lua-logo-nolabel.svg', position: new THREE.Vector3(3, -1, -1) }
+        ];
+
+        icons.forEach(icon => {
+            loader.load(icon.texture, (texture) => {
+                const aspect = texture.image.width / texture.image.height;
+                const geometry = new THREE.PlaneGeometry(1 * aspect, 1);
+                const material = new THREE.MeshBasicMaterial({ map: texture, transparent: true, side: THREE.DoubleSide });
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.position.copy(icon.position);
+                iconsGroup.add(mesh);
+            });
+        });
+
+        camera.position.z = 5;
+
+        // Анимация
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Вращение частиц
+            particlesMesh.rotation.x += 0.0001;
+            particlesMesh.rotation.y += 0.0001;
+
+            // Вращение группы иконок по диагональной оси
+            iconsGroup.rotation.y += 0.005;
+            iconsGroup.rotation.x += 0.002;
+            iconsGroup.rotation.z += 0.001;
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+    </script>
+</body>
+</html>            depthWrite: false
         });
 
         const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
