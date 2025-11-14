@@ -7,10 +7,12 @@
     <link rel="stylesheet" href="style.css">
     <!-- Подключение иконок (Font Awesome) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Three.js для 3D эффектов -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
-    <!-- Canvas для анимированных частиц -->
-    <canvas id="particles-canvas"></canvas>
+    <!-- Canvas для 3D частиц и иконок -->
+    <div id="three-container"></div>
 
     <div class="container">
         <!-- Главная карточка -->
@@ -28,16 +30,10 @@
                 <p>Ленивый кодер тг ботов и скриптов на боблох, имею тг канал с почти 10к</p>
             </div>
 
-            <!-- Блок "Навыки" -->
+            <!-- Блок "Навыки" с 3D иконками -->
             <div class="section">
                 <h2><i class="fas fa-code"></i> Языки</h2>
-                <div class="skills">
-                    <span class="skill">Python</span>
-                    <span class="skill">CSS</span>
-                    <span class="skill">Html</span>
-                    <span class="skill">Lua</span>
-                    <!-- Добавьте свои навыки -->
-                </div>
+                <div id="skills-3d" class="skills-3d"></div>
             </div>
 
             <!-- Блок "Проекты" -->
@@ -75,60 +71,84 @@
         <p>&copy; 2025 Snowt. Сделано с <i class="fas fa-heart"></i></p>
     </footer>
 
-    <!-- JavaScript для анимированных частиц -->
+    <!-- JavaScript для 3D эффектов с Three.js -->
     <script>
-        const canvas = document.getElementById('particles-canvas');
-        const ctx = canvas.getContext('2d');
+        // Настройка сцены
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.getElementById('three-container').appendChild(renderer.domElement);
 
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-
+        // Адаптация при ресайзе
         window.addEventListener('resize', () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
         });
 
-        class Particle {
-            constructor() {
-                this.x = Math.random() * canvas.width;
-                this.y = Math.random() * canvas.height;
-                this.size = Math.random() * 2 + 1;
-                this.speedX = Math.random() * 0.5 - 0.25;
-                this.speedY = Math.random() * 0.5 - 0.25;
-                this.opacity = Math.random() * 0.5 + 0.1;
-            }
-
-            update() {
-                this.x += this.speedX;
-                this.y += this.speedY;
-
-                if (this.x > canvas.width || this.x < 0) this.speedX = -this.speedX;
-                if (this.y > canvas.height || this.y < 0) this.speedY = -this.speedY;
-            }
-
-            draw() {
-                ctx.fillStyle = `rgba(255, 255, 255, ${this.opacity})`;
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                ctx.fill();
-            }
+        // 3D частицы
+        const particlesGeometry = new THREE.BufferGeometry();
+        const particlesCount = 5000;
+        const posArray = new Float32Array(particlesCount * 3);
+        for (let i = 0; i < particlesCount * 3; i++) {
+            posArray[i] = (Math.random() - 0.5) * 10;
         }
+        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
 
-        const particles = [];
-        for (let i = 0; i < 200; i++) {
-            particles.push(new Particle());
-        }
+        const particlesMaterial = new THREE.PointsMaterial({
+            size: 0.005,
+            color: 0xffffff,
+            blending: THREE.AdditiveBlending,
+            transparent: true,
+            depthWrite: false
+        });
 
-        function animate() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            particles.forEach(particle => {
-                particle.update();
-                particle.draw();
+        const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+        scene.add(particlesMesh);
+
+        // 3D иконки языков
+        const loader = new THREE.TextureLoader();
+        const icons = [
+            { texture: 'https://www.python.org/static/community_logos/python-logo-master-v3-TM.png', position: new THREE.Vector3(-1.5, 0, 0) },
+            { texture: 'https://upload.wikimedia.org/wikipedia/commons/d/d5/CSS3_logo_and_wordmark.svg', position: new THREE.Vector3(-0.5, 0, 0) },
+            { texture: 'https://upload.wikimedia.org/wikipedia/commons/6/61/HTML5_logo_and_wordmark.svg', position: new THREE.Vector3(0.5, 0, 0) },
+            { texture: 'https://upload.wikimedia.org/wikipedia/commons/d/df/Lua-logo-nolabel.svg', position: new THREE.Vector3(1.5, 0, 0) }
+        ];
+
+        icons.forEach(icon => {
+            loader.load(icon.texture, (texture) => {
+                const geometry = new THREE.PlaneGeometry(0.5, 0.5);
+                const material = new THREE.MeshBasicMaterial({ map: texture, transparent: true, side: THREE.DoubleSide });
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.position.copy(icon.position);
+                scene.add(mesh);
+
+                // Анимация вращения
+                function rotateIcon() {
+                    mesh.rotation.y += 0.01;
+                    requestAnimationFrame(rotateIcon);
+                }
+                rotateIcon();
             });
+        });
+
+        camera.position.z = 5;
+
+        // Анимация
+        function animate() {
             requestAnimationFrame(animate);
+
+            // Вращение частиц
+            particlesMesh.rotation.x += 0.0001;
+            particlesMesh.rotation.y += 0.0001;
+
+            renderer.render(scene, camera);
         }
 
         animate();
+
+        // Для секции навыков - позиционируем иконки в 3D пространстве над секцией, но для простоты они в общем 3D контейнере
     </script>
 </body>
 </html>
